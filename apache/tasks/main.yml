@@ -1,0 +1,115 @@
+---
+- name: install apache2
+  become: yes
+  become_uer: root
+  apt:
+    name : apache2
+    update_cache: yes
+    state: latest
+  tags:
+    - apache
+
+- name: Deletes Default apache sites available
+  become: yes
+  become_user: root
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /etc/apache2/sites-available/000-default.conf
+    - /etc/apache2/sites-available/default-ssl.conf
+  tags:
+    - apache
+
+- name: Delete Default apache enabled sites
+  become: yes
+  become_user: root
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /etc/apache2/sites-enabled/000-default.conf
+  tags:
+    - apache
+
+- name: create directory if they don't exist
+  become: yes
+  become_user: root
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: appsadm
+    group: appsadm
+    mode: 0775
+  with_items:
+    - /var/log/httpd/logs
+    - /etc/apache2/ssl
+  tags:
+    - apache
+
+- name: copy httpd.conf to /etc/apache2/sites-available/
+  become: yes
+  become_user: root
+  template:
+    src : httpd.conf
+    dest : /etc/apache2/sites-available/httpd.conf
+    owner: appsadm
+    group: appsadm
+  tags:
+    - apache
+
+- name: copy self signed certs to /etc/apache2/ssl/
+  become: yes
+  become_user: root
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: 'code.crt', dest: '/etc/apache2/ssl' }
+    - { src: 'code.csr', dest: '/etc/apache2/ssl' }
+    - { src: 'code.key', dest: '/etc/apache2/ssl' }
+  owner: appsadm
+  tags:
+    - apache
+
+- name: a2ensite httpd.conf
+  become: yes
+  become_user: root
+  command: a2ensite httpd.conf
+  args:
+    creates: /etc/apache2/sites-enabled/httpd.conf
+  tags:
+    - apache
+
+- name: enabled mod_ssl
+  become: yes
+  become_user: root
+  command: a2enmod ssl
+  tags:
+     - apache
+
+- name: enabled mod_headers
+  apache2_module: 
+        name=headers 
+        state=present
+
+- name: restart apache
+  become: yes
+  become_user: root
+  command: service apache2 restart
+  tags:
+    - apache
+
+- name: restart shibboleth
+  become: yes
+  become_user: root
+  command: service shibd restart
+  tags:
+    - apache
+
+- name: configuring gitlab
+  become: yes
+  become_user: root
+  command: gitlab-ctl reconfigure
+  tags:
+    - apache
