@@ -1,0 +1,45 @@
+---
+
+- name: Install the build-essential packages
+  become: yes
+  become_user: root
+  apt:
+    name : "{{ packages }}"
+    update_cache: yes
+    state: latest
+  vars:
+    packages:
+      - libapache2-mod-shib2
+  tags:
+    - shibboleth
+
+- name: copy shibboleth2.xml to /etc/shibboleth/shibboleth2.xml
+  become: yes
+  become_user: root
+  template:
+    src : shibboleth2.xml
+    dest : /etc/shibboleth
+    owner: appsadm
+    group: appsadm
+  tags:
+    - shibboleth
+
+- name: copy certs to /etc/shibboleth
+  become: yes
+  become_user: root
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+      - { src: 'sp-cert.pem', dest: '/etc/shibboleth' }
+      - { src: 'sp-key.pem', dest: '/etc/shibboleth' }
+  owner: appsadm
+  tags:
+    - shibboleth
+
+- name: restart shibboleth
+  become: yes
+  become_user: root
+  command: service shibd restart
+  tags:
+    - shibboleth

@@ -1,0 +1,149 @@
+---                                                                                                    
+- name: Check that the server is alive (common/main.yml)
+  action: ping
+  tags:
+  - test
+
+- name: Set hostname
+  become: yes
+  become_user: root
+  hostname:
+    name: "{{ hostname }}"
+  tags:
+    - hostname
+
+- name: Update /etc/hosts
+  become: yes
+  become_user: root
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '^(127\.0\.0\.1[ \t]+localhost.*)$'
+    line: '\1 {{ hostname_short }}'
+    backrefs: yes
+    state: present
+  tags:
+    - hostname
+
+- name: Add the appsadm group
+  become: yes                                                                                          
+  become_user: root
+  group:
+    name: appsadm
+    gid: 235
+    state: present
+
+- name: Add appsadm user
+  become: yes                                                                                          
+  become_user: root
+  user:
+    name: appsadm
+    uid: 235
+    group: appsadm
+
+- name: Create /apps
+  become: yes
+  become_user: root
+  file:
+    path: /apps
+    state: directory
+    mode: 0755
+    owner: appsadm
+    group: appsadm
+
+- name: Create /apps/src
+  become: yes
+  become_user: root
+  file:
+    path: /apps/src
+    state: directory
+    mode: 0755
+    owner: appsadm
+    group: appsadm
+
+- name: Install postfix
+  become: yes
+  become_user: root
+  apt:
+    name: postfix
+    update_cache: yes
+  tags:
+    - gitlab
+
+- name: Start postfix
+  become: yes
+  become_user: root
+  service:
+    name: postfix
+    state: started
+  tags:
+    - gitlab
+
+- name: Install the build-essential packages
+  become: yes
+  become_user: root
+  apt:
+    name : "{{ packages }}"
+    update_cache: yes
+  vars:
+    packages:
+      - libcurl4
+      - curl
+      - openssh-server
+      - ca-certificates
+  tags:
+    - gitlab
+
+- name: Download gitlab repo Debian-Like
+  become: yes
+  become_user: root
+  get_url:
+    url: https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh
+    dest: /apps/src/gitlab.deb.sh
+    mode: 0755
+    validate_certs: no
+  when:
+    ansible_os_family == "Debian"
+  tags:
+    - gitlab
+
+- name: Install gitlab repo Debian-Like
+  become: yes
+  become_user: root
+  shell:
+    /apps/src/gitlab.deb.sh
+  when:
+    ansible_os_family == "Debian"
+  tags:
+    - gitlab
+
+- name: Install gitlab Debian-Like
+  become: yes
+  become_user: root
+  apt:
+    name: gitlab-ee
+    state: latest
+  when:
+    ansible_os_family == "Debian"
+  tags:
+    - gitlab
+
+- name: Copy gitlab.rb to /etc/gitlab/gitlab.rb
+  become: yes
+  become_user: root
+  template:
+    src: gitlab.rb
+    dest: /etc/gitlab/gitlab.rb
+    owner: appsadm
+    group: appsadm
+    mode: 0600
+  tags:
+    - gitlab
+
+- name: reconfiguring gitlab
+  become: yes
+  become_user: root
+  command: gitlab-ctl reconfigure
+  tags:
+    - gitlab
+
+
