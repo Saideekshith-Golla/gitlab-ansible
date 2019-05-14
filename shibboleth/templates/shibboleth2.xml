@@ -20,7 +20,7 @@
     -->
 
     <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
-    <ApplicationDefaults entityID="https://git-pprd.middleware.vt.edu/shibboleth"
+    <ApplicationDefaults entityID="https://ahdfask/shibboleth"
                          REMOTE_USER="authId">
 
         <!--
@@ -70,7 +70,7 @@
         Allows overriding of error template information/filenames. You can
         also add attributes with values that can be plugged into the templates.
         -->
-        <Errors supportContact="saig93@vt.edu"
+        <Errors supportContact=""
             helpLocation="/about.html"
             styleSheet="/shibboleth-sp/main.css"/>
         
@@ -93,8 +93,8 @@
         <MetadataProvider type="XML" validate="true" file="partner-metadata.xml"/>
 	-->
         <MetadataProvider type="XML"
-          uri="https://middleware.vt.edu/metadata/vt-preview.xml"
-          backingFilePath="vt-preview.xml"
+          uri="https://"
+          backingFilePath=""
           reloadInterval="3600" />
 
         <!-- Map to extract attributes from SAML assertions. -->
